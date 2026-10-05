@@ -1,0 +1,50 @@
+[workspace]
+resolver = "3"
+
+members = [
+    "clash-bin",
+    "clash-lib",
+    "clash-doc",
+    "clash-ffi",
+    "clash-dns",
+    "clash-netstack"
+]
+
+
+[workspace.package]
+version = "0.10.9"
+repository = "https://github.com/Watfaq/clash-rs.git"
+edition = "2024"
+authors = ["https://github.com/Watfaq/clash-rs/graphs/contributors"]
+homepage = "https://github.com/watfaq/clash-rs"
+
+[profile.release]
+opt-level = "z"
+codegen-units = 1
+lto = "fat"
+strip = "symbols"
+debug = 0
+panic = "abort"
+
+[profile.detailed-release]
+inherits = "release"
+opt-level = 1
+lto = "thin"
+strip = "none"
+debug = "line-tables-only"
+split-debuginfo = "off"
+panic = "unwind"
+incremental = true
+codegen-units = 256
+
+[workspace.lints.rust]
+warnings = "deny"
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(docker_test)', 'cfg(throughput_test)', 'cfg(tokio_unstable)'] }
+
+[workspace.lints.clippy]
+redundant_clone = "deny"
+needless_collect = "deny"
+
+[patch.crates-io]
+rustls = { git = "https://github.com/Watfaq/rustls.git", branch = "watfaq/0.23.45" }
+tokio-rustls = { git = "https://github.com/Watfaq/tokio-rustls.git", branch = "watfaq/0.26.4" }

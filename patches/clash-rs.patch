@@ -1,0 +1,120 @@
+--- a/clash-lib/src/app/profile/mod.rs
++++ b/clash-lib/src/app/profile/mod.rs
+@@ -67,6 +67,12 @@
+         if g.store_selected() {
+             g.set_selected(group, server);
+         }
++    }
++
++    /// Export the final cache after an embedded runtime has stopped. This
++    /// preserves fake-IP mappings across immediate application reloads.
++    pub async fn snapshot_yaml(&self) -> Result<String, serde_yaml::Error> {
++        serde_yaml::to_string(&self.0.read().await.db)
+     }
+ 
+     pub async fn get_selected(&self, group: &str) -> Option<String> {
+--- a/clash-lib/src/lib.rs
++++ b/clash-lib/src/lib.rs
+@@ -432,7 +432,7 @@
+     }
+ }
+ 
+-async fn create_components(
++pub async fn create_components(
+     cwd: PathBuf,
+     config: InternalConfig,
+ ) -> Result<RuntimeComponents> {
+--- a/clash-lib/src/proxy/tun/mod.rs
++++ b/clash-lib/src/proxy/tun/mod.rs
+@@ -4,7 +4,7 @@
+ pub use runner::TunRunner;
+ mod stream;
+ 
+-#[cfg(target_os = "linux")] // for tproxy
++#[cfg(all(target_os = "linux", feature = "tproxy"))]
+ pub use datagram::TunDatagram;
+ 
+ #[cfg(test)]
+--- a/clash-lib/src/proxy/tun/runner.rs
++++ b/clash-lib/src/proxy/tun/runner.rs
+@@ -34,6 +34,7 @@
+     dispatcher: Arc<Dispatcher>,
+     resolver: ThreadSafeDNSResolver,
+     cancellation_token: CancellationToken,
++    ready: tokio::sync::watch::Sender<Option<Result<(), String>>>,
+ }
+ 
+ impl TunRunner {
+@@ -48,6 +49,7 @@
+             dispatcher,
+             resolver,
+             cancellation_token: cancellation_token.unwrap_or_default(),
++            ready: tokio::sync::watch::channel(None).0,
+         })
+     }
+ 
+@@ -315,10 +317,14 @@
+         let dns_hijack = self.cfg.dns_hijack;
+         let cancellation_token = self.cancellation_token.clone();
+ 
++        let ready = self.ready.clone();
+         tokio::spawn(async move {
+             let (tun, stack, mut tcp_listener, udp_socket) =
+                 TunRunner::new_internal(&cfg)
+                     .await
++                    .inspect_err(|e| {
++                        ready.send_replace(Some(Err(e.to_string())));
++                    })
+                     .inspect_err(|e| match e {
+                         Error::Io(e) => {
+                             if e.kind() == std::io::ErrorKind::PermissionDenied {
+@@ -337,6 +343,7 @@
+                         }
+                     })?;
+ 
++            ready.send_replace(Some(Ok(())));
+             let framed = tun_rs::async_framed::DeviceFramed::new(
+                 tun,
+                 tun_rs::async_framed::BytesCodec::new(),
+@@ -452,10 +459,28 @@
+                 }
+                 Err(e) => {
+                     error!("tun runner error: {}", e);
++                    ready.send_replace(Some(Err(e.to_string())));
+                     Err(e)
+                 }
+             }
+         });
++    }
++
++    fn wait_ready(&self) -> BoxFuture<'_, Result<(), Error>> {
++        Box::pin(async move {
++            if !self.cfg.enable {
++                return Ok(());
++            }
++            let mut rx = self.ready.subscribe();
++            loop {
++                if let Some(result) = rx.borrow_and_update().clone() {
++                    return result.map_err(Error::Operation);
++                }
++                rx.changed()
++                    .await
++                    .map_err(|e| Error::Operation(e.to_string()))?;
++            }
++        })
+     }
+ 
+     fn shutdown(&self) {
+--- a/clash-lib/src/runner.rs
++++ b/clash-lib/src/runner.rs
+@@ -3,6 +3,10 @@
+ pub trait Runner: Send + Sync {
+     /// Start running the runner in background.
+     fn run_async(&self);
++    /// Wait for initialization; runners without a readiness signal return immediately.
++    fn wait_ready(&self) -> BoxFuture<'_, Result<(), crate::Error>> {
++        Box::pin(async { Ok(()) })
++    }
+     /// Signal the runner to shutdown.
+     fn shutdown(&self);
+     /// Wait for the runner to finish.
