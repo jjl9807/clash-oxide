@@ -1,0 +1,43 @@
+[workspace]
+resolver = "3"
+members = ["crates/app", "crates/model", "crates/i18n", "crates/client", "crates/engine-clash", "crates/daemon", "crates/gui", "crates/tui"]
+default-members = ["crates/app"]
+exclude = ["vendor/clash-rs"]
+
+[workspace.package]
+version = "0.0.1"
+edition = "2024"
+license = "MIT"
+
+[workspace.dependencies]
+anyhow = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+tokio = { version = "1", features = ["full"] }
+tokio-util = { version = "0.7", features = ["rt"] }
+clap = { version = "4", features = ["derive", "string"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+libc = "0.2"
+oxide-model = { path = "crates/model" }
+oxide-i18n = { path = "crates/i18n" }
+oxide-client = { path = "crates/client" }
+oxide-engine-clash = { path = "crates/engine-clash" }
+oxide-daemon = { path = "crates/daemon" }
+oxide-tui = { path = "crates/tui" }
+oxide-gui = { path = "crates/gui" }
+
+# clash-rs's REALITY implementation uses these upstream TLS extensions.
+# Cargo.lock records the exact commits; update together with the vendored core.
+[patch.crates-io]
+rustls = { git = "https://github.com/Watfaq/rustls.git", branch = "watfaq/0.23.45" }
+tokio-rustls = { git = "https://github.com/Watfaq/tokio-rustls.git", branch = "watfaq/0.26.4" }
+
+[profile.dev]
+debug = 0
+
+[profile.release]
+lto = "thin"
+strip = true

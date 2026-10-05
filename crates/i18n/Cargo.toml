@@ -1,0 +1,13 @@
+[package]
+name = "oxide-i18n"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+oxide-model.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+rust-i18n = "4.2.4"
+tempfile = "3"

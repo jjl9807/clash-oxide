@@ -1,0 +1,33 @@
+[Unit]
+Description=Clash Oxide proxy daemon for UID %i
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=%i
+EnvironmentFile=/etc/clash-oxide/%i.env
+Environment=XDG_RUNTIME_DIR=/run/user/%i
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/%i/bus
+RuntimeDirectory=clash-oxide-%i
+RuntimeDirectoryMode=0700
+UMask=0077
+ExecStart=/usr/local/bin/clash-oxide daemon --socket /run/clash-oxide-%i/control.sock
+ExecStopPost=/usr/local/bin/clash-oxide daemon cleanup
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=150
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+
+[Install]
+WantedBy=multi-user.target

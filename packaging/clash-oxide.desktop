@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Clash Oxide
+Comment=Manage proxy profiles and connections
+Exec=clash-oxide gui
+TryExec=clash-oxide
+Icon=clash-oxide
+Terminal=false
+Categories=Network;
+StartupNotify=false
+StartupWMClass=clash-oxide

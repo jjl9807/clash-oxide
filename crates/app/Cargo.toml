@@ -1,0 +1,20 @@
+[package]
+name = "clash-oxide"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = ["gui"]
+gui = ["dep:oxide-gui"]
+
+[dependencies]
+oxide-i18n.workspace = true
+anyhow.workspace = true
+clap.workspace = true
+serde_json.workspace = true
+oxide-model.workspace = true
+oxide-client.workspace = true
+oxide-daemon.workspace = true
+oxide-tui.workspace = true
+oxide-gui = { workspace = true, optional = true }

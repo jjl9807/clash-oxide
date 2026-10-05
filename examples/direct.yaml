@@ -1,0 +1,13 @@
+# Minimal local smoke-test profile. DIRECT does not bypass internet restrictions.
+# Import your provider's complete Clash YAML subscription for real proxy nodes.
+proxies: []
+proxy-groups:
+  - name: Proxy
+    type: select
+    proxies: [DIRECT, REJECT]
+rules:
+  - MATCH,Proxy
+dns:
+  nameserver:
+    - 1.1.1.1
+    - 8.8.8.8

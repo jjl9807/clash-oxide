@@ -1,0 +1,13 @@
+[package]
+name = "oxide-tui"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+[dependencies]
+oxide-i18n.workspace = true
+oxide-model.workspace = true
+oxide-client.workspace = true
+anyhow.workspace = true
+ratatui = "0.30"
+crossterm = "0.29"
+unicode-width = "0.2"

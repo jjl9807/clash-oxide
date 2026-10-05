@@ -1,0 +1,7 @@
+[env]
+# Scoped to the three upstream crates that use unstable library features.
+RUSTC_BOOTSTRAP = "clash_lib,watfaq_dns,watfaq_netstack"
+
+[build]
+rustflags = ["--cfg", "tokio_unstable"]
+
